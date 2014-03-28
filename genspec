@@ -1,0 +1,117 @@
+#!/usr/bin/python
+
+# Script to generate spec based on template
+# (c) 2014 Andrey Cherepanov <cas@altlinux.org>
+
+# TODO configurable variables
+templates_path = "/home/cas/bin/spectemplates/"
+maintainer = "Andrey Cherepanov <cas@altlinux.org>"
+
+from string import Template
+import os
+import datetime
+import optparse
+
+spec_types = {  'python': 'python-module-',
+		'ruby': 'ruby-',
+		'java-maven': ''
+	     }
+
+# TODO
+# - dump spec
+# - fill fields from pypi, rubyforge, span
+# - url download
+
+class Spec:
+	"""RPM Spec class"""
+	def __init__(self):
+		"""Constructor"""
+		self.module  = "" 
+		self.package = ""
+		self.keys = dict( spec_type = "",
+				module  = "",
+				version = "",
+				summary = "",
+				license = "",
+				url     = "",
+				packager    = "",
+				description = "",
+				stamp       = "",
+				lastchange  = "" )
+		self.spec = ""
+
+	def apply(self, spectype):
+		"""Apply values to spec template"""
+		self.keys['packager'] = maintainer
+		
+		file = open( templates_path + spectype + ".spec", "r" )
+		
+		# Generate package name
+		if spec_types.has_key( spectype ):
+			self.package = spec_types[ spectype ] + self.keys['module']
+		else:
+			self.package = self.module
+
+		# Generate changelog entry
+		self.keys['stamp'] = '* ' \
+		+ datetime.datetime.now().strftime("%a %b %d %Y") \
+		+ ' ' + self.keys['packager'] \
+		+ ' ' + self.keys['version']
+		
+		# Fill template
+		self.spec = file.read()
+		file.close()
+		self.spec = Template( self.spec ).safe_substitute( self.keys )
+		
+	def deploy(self):
+		"""Generate directory with spec and gear rules"""
+		self.apply( self.keys['spec_type'] )
+		
+		# Create directory
+		if os.path.basename(os.getcwd()) != self.package:
+			os.mkdir( self.package )
+			os.chdir( self.package )
+		
+		# Create gear rules
+		os.mkdir( '.gear' )
+		if self.package != self.keys['module']:
+			gear_rules = "tar: . name=" + self.keys['module'] + "-@version@ base=" + self.keys['module'] + "-@version@"
+		else:
+			gear_rules = "tar: ."
+		f = open( '.gear/rules', 'w' )
+		f.write( gear_rules )
+		f.close()
+		
+		# Save spec file
+		f = open( self.package + '.spec', 'w' )
+		f.write( self.spec )
+		f.close()
+		
+		# Put in Git
+		#os.system( "git init ." )
+		#os.system( "git add ." )
+		#os.system( "gear-commit" )
+
+# ======================================================================================================
+spec = Spec()
+		
+# Read command-line parameters
+# TODO
+opt=optparse.OptionParser(version='1.0', description='Script to generate spec based on template')
+
+opt.add_option('-n', action='store', dest='module', help='Package name')
+opt.add_option('-t', action='store', dest='spec_type', help='Package type')
+opt.add_option('-v', action='store', dest='version', help='Package version')
+opt.add_option('-s', action='store', dest='summary', help='Package summary')
+opt.add_option('-l', action='store', dest='license', help='Package license')
+opt.add_option('-u', action='store', dest='url', help='Package URL')
+opt.add_option('-d', action='store', dest='description', help='Package description')
+opt.add_option('-c', action='store', dest='lastchange', help='Package changes')
+
+# Fill values...
+options,arguments = opt.parse_args()
+
+spec.keys = options.__dict__
+
+# Prepare place
+spec.deploy()
