@@ -1,11 +1,14 @@
 #!/usr/bin/python
 
-# Script to generate spec based on template
+# Script to generate RPM spec file based on template
 # (c) 2014 Andrey Cherepanov <cas@altlinux.org>
 
+# This program is free software; you can redistribute it and/or modify it
+# under the terms of GNU General Public License (GPL) version 3 or later.
+
 # TODO configurable variables
-templates_path = "/home/cas/bin/spectemplates/"
-maintainer = "Andrey Cherepanov <cas@altlinux.org>"
+templates_path = "/usr/share/spectemplates/"
+maintainer = ""
 
 from string import Template
 import os
@@ -16,11 +19,6 @@ spec_types = {  'python': 'python-module-',
 		'ruby': 'ruby-',
 		'java-maven': ''
 	     }
-
-# TODO
-# - dump spec
-# - fill fields from pypi, rubyforge, span
-# - url download
 
 class Spec:
 	"""RPM Spec class"""
@@ -87,17 +85,12 @@ class Spec:
 		f.write( self.spec )
 		f.close()
 		
-		# Put in Git
-		#os.system( "git init ." )
-		#os.system( "git add ." )
-		#os.system( "gear-commit" )
-
 # ======================================================================================================
 spec = Spec()
 		
 # Read command-line parameters
 # TODO
-opt=optparse.OptionParser(version='1.0', description='Script to generate spec based on template')
+opt=optparse.OptionParser(version='1.0.0', description='Script to generate RPM spec file based on template')
 
 opt.add_option('-n', action='store', dest='module', help='Package name')
 opt.add_option('-t', action='store', dest='spec_type', help='Package type')
