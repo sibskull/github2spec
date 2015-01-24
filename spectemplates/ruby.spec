@@ -9,7 +9,7 @@ License: MIT/Ruby
 Group:   Development/Ruby
 Url:     $url
  
-Packager: $packager
+Packager:  Ruby Maintainers Team <ruby@packages.altlinux.org>
 BuildArch: noarch
  
 Source:  %pkgname-%version.tar
