@@ -15,10 +15,9 @@ import os
 import datetime
 import optparse
 
-spec_types = {  'python': 'python-module-',
-		'ruby': 'ruby-',
-		'java-maven': ''
-	     }
+spec_prefixes = {  'python': 'python-module-',
+		   'ruby': 'ruby-',
+	        }
 
 class Spec:
 	"""RPM Spec class"""
@@ -45,16 +44,16 @@ class Spec:
 		file = open( templates_path + spectype + ".spec", "r" )
 		
 		# Generate package name
-		if spec_types.has_key( spectype ):
-			self.package = spec_types[ spectype ] + self.keys['module']
+		if spec_prefixes.has_key( spectype ):
+			self.package = spec_prefixes[ spectype ] + self.keys['module']
 		else:
-			self.package = self.module
+			self.package = self.keys['module']
 
 		# Generate changelog entry
 		self.keys['stamp'] = '* ' \
-		+ datetime.datetime.now().strftime("%a %b %d %Y") \
-		+ ' ' + self.keys['packager'] \
-		+ ' ' + self.keys['version']
+		  + datetime.datetime.now().strftime("%a %b %d %Y") \
+		  + ' ' + self.keys['packager'] \
+		  + ' ' + self.keys['version']
 		
 		# Fill template
 		self.spec = file.read()
