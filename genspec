@@ -8,12 +8,17 @@
 
 # TODO configurable variables
 templates_path = "/usr/share/spectemplates/"
-maintainer = ""
 
 from string import Template
 import os
 import datetime
 import optparse
+import subprocess
+
+# Get configured packager
+p = subprocess.Popen(['rpm', '--eval', '%{packager}'], stdout=subprocess.PIPE)
+out, err = p.communicate()
+maintainer = out.rstrip()
 
 spec_prefixes = {  'python': 'python-module-',
 		   'ruby': 'ruby-',
