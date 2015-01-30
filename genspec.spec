@@ -28,5 +28,5 @@ cp -av spectemplates/* %buildroot%_datadir/spectemplates/
 %_datadir/spectemplates
 
 %changelog
-* Fri Apr 25 2014 Andrey Cherepanov <cas@altlinux.org> 1.0.0-alt1
+* Fri Jan 30 2015 Andrey Cherepanov <cas@altlinux.org> 1.0.0-alt1
 - Initial publish
