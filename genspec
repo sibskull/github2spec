@@ -5,20 +5,30 @@
 
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of GNU General Public License (GPL) version 3 or later.
-
-# TODO configurable variables
-templates_path = "/usr/share/spectemplates/"
-
 from string import Template
 import os
 import datetime
 import optparse
 import subprocess
 
+templates_path = "/usr/share/spectemplates/"
+t = os.getenv('GENSPEC_TEMPLATES')
+if t != None:
+	templates_path = t
+
+# Add epilog show in OptionParser
+class MyParser(optparse.OptionParser):
+	def format_epilog(self, formatter):
+		return self.epilog
+
 # Get configured packager
 p = subprocess.Popen(['rpm', '--eval', '%{packager}'], stdout=subprocess.PIPE)
 out, err = p.communicate()
 maintainer = out.rstrip()
+
+m = os.getenv('GENSPEC_PACKAGER')
+if m != None:
+	maintainer = m
 
 spec_prefixes = {  'python': 'python-module-',
 		   'ruby': 'ruby-',
@@ -93,8 +103,12 @@ class Spec:
 spec = Spec()
 		
 # Read command-line parameters
-# TODO
-opt=optparse.OptionParser(version='1.0.0', description='Script to generate RPM spec file based on template')
+opt=MyParser(version='1.0.0', description='Script to generate RPM spec file based on template', epilog=
+"""
+Supported environment variables:
+GENSPEC_TEMPLATES	Path to spec templates (default /usr/share/spectemplates/)
+GENSPEC_PACKAGER	Packager name (default from `rpm --eval '%{packager}'`)
+""")
 
 opt.add_option('-n', action='store', dest='module', help='Package name')
 opt.add_option('-t', action='store', dest='spec_type', help='Package type')

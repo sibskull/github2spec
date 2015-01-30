@@ -33,6 +33,10 @@ ruby		for Ruby module or gem
 
 See also: http://www.altlinux.org/Category:SampleSpecs
 
+Supported environment variables:
+GENSPEC_TEMPLATES       Path to spec templates (default /usr/share/spectemplates/)
+GENSPEC_PACKAGER        Packager name (default from `rpm --eval '%{packager}'`)
+
 
 EXAMPLE
 -------
