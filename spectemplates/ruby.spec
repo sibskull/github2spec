@@ -5,7 +5,7 @@ Version: $version
 Release: alt1
  
 Summary: $summary
-License: MIT/Ruby
+License: $license
 Group:   Development/Ruby
 Url:     $url
  
