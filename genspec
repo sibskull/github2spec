@@ -1,25 +1,31 @@
 #!/usr/bin/python
 
 # Script to generate RPM spec file based on template
-# (c) 2014 Andrey Cherepanov <cas@altlinux.org>
+# (c) 2014,2017 Andrey Cherepanov <cas@altlinux.org>
 
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of GNU General Public License (GPL) version 3 or later.
 from string import Template
 import os
+import sys
 import datetime
 import optparse
 import subprocess
+import re
 
 templates_path = "/usr/share/spectemplates/"
-t = os.getenv('GENSPEC_TEMPLATES')
-if t != None:
-	templates_path = t
 
 # Add epilog show in OptionParser
 class MyParser(optparse.OptionParser):
 	def format_epilog(self, formatter):
 		return self.epilog
+
+# Get templates path and build list of available templates
+t = os.getenv('GENSPEC_TEMPLATES')
+if t != None:
+	templates_path = t
+
+
 
 # Get configured packager
 p = subprocess.Popen(['rpm', '--eval', '%{packager}'], stdout=subprocess.PIPE)
@@ -110,7 +116,7 @@ GENSPEC_TEMPLATES	Path to spec templates (default /usr/share/spectemplates/)
 GENSPEC_PACKAGER	Packager name (default from `rpm --eval '%{packager}'`)
 """)
 
-opt.add_option('-n', action='store', dest='module', help='Package name')
+opt.add_option('-n', action='store', dest='module', help='Package or module name')
 opt.add_option('-t', action='store', dest='spec_type', help='Package type')
 opt.add_option('-v', action='store', dest='version', help='Package version')
 opt.add_option('-s', action='store', dest='summary', help='Package summary')
@@ -120,9 +126,34 @@ opt.add_option('-d', action='store', dest='description', help='Package descripti
 opt.add_option('-c', action='store', dest='lastchange', help='Package changes')
 
 # Fill values...
-options,arguments = opt.parse_args()
+(options,arguments) = opt.parse_args()
 
-spec.keys = options.__dict__
+# print(sys.argv)
+
+def input_with_check(prompt):
+    res = raw_input(prompt)
+    # skip empty string and string containing only white spaces
+    while (re.match('^\s*$', res)):
+        print("Parameter should not be empty")
+        res = raw_input(prompt)
+    return res
+
+read_dict = {}
+
+# Go to interactive mode
+if len(sys.argv) < 2:
+    read_dict['module']      = input_with_check('Package or module name: ')
+    read_dict['spec_type']   = input_with_check('Package type: ')
+    read_dict['version']     = input_with_check('Package version: ')
+    read_dict['summary']     = input_with_check('Package summary: ')
+    read_dict['license']     = input_with_check('Package license: ')
+    read_dict['url']         = input_with_check('Package URL: ')
+    read_dict['description'] = input_with_check('Package description: ')
+    read_dict['lastchange']  = input_with_check('Package changes: ')
+    
+    spec.keys = read_dict
+else:
+    spec.keys = options.__dict__
 
 # Prepare place
 spec.deploy()
