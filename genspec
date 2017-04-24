@@ -128,7 +128,16 @@ opt.add_option('-c', action='store', dest='lastchange', help='Package changes')
 # Fill values...
 (options,arguments) = opt.parse_args()
 
-# print(sys.argv)
+def get_available_types():
+    available_types = []
+    try:
+        file_names = os.listdir(templates_path)
+        available_types = [x.replace('.spec','') for x in file_names if x.endswith('.spec')]
+    except:
+        print('Directory ' + templates_path + ' does not exist or does not contain any spec templates')
+
+    return (' (' + ','.join(list(sorted(list(available_types)))) + ')')
+
 
 def input_with_check(prompt):
     res = raw_input(prompt)
@@ -140,10 +149,10 @@ def input_with_check(prompt):
 
 read_dict = {}
 
-# Go to interactive mode
 if len(sys.argv) < 2:
+    # Go to interactive mode
     read_dict['module']      = input_with_check('Package or module name: ')
-    read_dict['spec_type']   = input_with_check('Package type: ')
+    read_dict['spec_type']   = input_with_check('Package type' + get_available_types() + ': ')
     read_dict['version']     = input_with_check('Package version: ')
     read_dict['summary']     = input_with_check('Package summary: ')
     read_dict['license']     = input_with_check('Package license: ')
