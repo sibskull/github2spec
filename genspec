@@ -158,7 +158,7 @@ if len(sys.argv) < 2:
     read_dict['license']     = input_with_check('Package license: ')
     read_dict['url']         = input_with_check('Package URL: ')
     read_dict['description'] = input_with_check('Package description: ')
-    read_dict['lastchange']  = input_with_check('Package changes: ')
+    read_dict['lastchange']  = input_with_check('Package changelog: ')
     
     spec.keys = read_dict
 else:
