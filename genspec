@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 # Script to generate RPM spec file based on template
 # (c) 2014,2017 Andrey Cherepanov <cas@altlinux.org>
@@ -18,89 +18,89 @@ templates_path = "/usr/share/spectemplates/"
 # Get templates path and build list of available templates
 t = os.getenv('GENSPEC_TEMPLATES')
 if t != None:
-	templates_path = t
+        templates_path = t
 
 # Get configured packager
 p = subprocess.Popen(['rpm', '--eval', '%{packager}'], stdout=subprocess.PIPE)
 out, err = p.communicate()
-maintainer = out.rstrip()
+maintainer = out.rstrip().decode()
 
 m = os.getenv('GENSPEC_PACKAGER')
 if m != None:
-	maintainer = m
+    maintainer = m
 
 spec_prefixes = {  'python': 'python-module-',
-		   'ruby': 'ruby-',
-	        }
+                   'ruby': 'ruby-',
+                }
 
 class Spec:
-	"""RPM Spec class"""
-	def __init__(self):
-		"""Constructor"""
-		self.module  = "" 
-		self.package = ""
-		self.keys = dict( spec_type = "",
-				module  = "",
-				version = "",
-				summary = "",
-				license = "",
-				url     = "",
-				packager    = "",
-				description = "",
-				stamp       = "",
-				lastchange  = "" )
-		self.spec = ""
+    """RPM Spec class"""
+    def __init__(self):
+        """Constructor"""
+        self.module  = "" 
+        self.package = ""
+        self.keys = dict( spec_type = "",
+                        module  = "",
+                        version = "",
+                        summary = "",
+                        license = "",
+                        url     = "",
+                        packager    = "",
+                        description = "",
+                        stamp       = "",
+                        lastchange  = "" )
+        self.spec = ""
 
-	def apply(self, spectype):
-		"""Apply values to spec template"""
-		self.keys['packager'] = maintainer
-		
-		file = open( templates_path + spectype + ".spec", "r" )
-		
-		# Generate package name
-		if spec_prefixes.has_key( spectype ):
-			self.package = spec_prefixes[ spectype ] + self.keys['module']
-		else:
-			self.package = self.keys['module']
+    def apply(self, spectype):
+        """Apply values to spec template"""
+        self.keys['packager'] = maintainer
+        
+        file = open( templates_path + spectype + ".spec", "r" )
+        
+        # Generate package name
+        if spectype in spec_prefixes:
+                self.package = spec_prefixes[ spectype ] + self.keys['module']
+        else:
+                self.package = self.keys['module']
 
-		# Generate changelog entry
-		self.keys['stamp'] = '* ' \
-		  + datetime.datetime.now().strftime("%a %b %d %Y") \
-		  + ' ' + self.keys['packager'] \
-		  + ' ' + self.keys['version']
-		
-		# Fill template
-		self.spec = file.read()
-		file.close()
-		self.spec = Template( self.spec ).safe_substitute( self.keys )
-		
-	def deploy(self):
-		"""Generate directory with spec and gear rules"""
-		self.apply( self.keys['spec_type'] )
-		
-		# Create directory
-		if os.path.basename(os.getcwd()) != self.package:
-			os.mkdir( self.package )
-			os.chdir( self.package )
-		
-		# Create gear rules
-		os.mkdir( '.gear' )
-		if self.package != self.keys['module']:
-			gear_rules = "tar: . name=" + self.keys['module'] + "-@version@ base=" + self.keys['module'] + "-@version@"
-		else:
-			gear_rules = "tar: ."
-		f = open( '.gear/rules', 'w' )
-		f.write( gear_rules )
-		f.close()
-		
-		# Save spec file
-		f = open( self.package + '.spec', 'w' )
-		f.write( self.spec )
-		f.close()
-		
+        # Generate changelog entry
+        self.keys['stamp'] = '* ' \
+          + datetime.datetime.now().strftime("%a %b %d %Y") \
+          + ' ' + self.keys['packager'] \
+          + ' ' + self.keys['version']
+        
+        # Fill template
+        self.spec = file.read()
+        file.close()
+        self.spec = Template( self.spec ).safe_substitute( self.keys )
+            
+    def deploy(self):
+        """Generate directory with spec and gear rules"""
+        self.apply( self.keys['spec_type'] )
+        
+        # Create directory
+        if os.path.basename(os.getcwd()) != self.package:
+                os.mkdir( self.package )
+                os.chdir( self.package )
+        
+        # Create gear rules
+        os.mkdir( '.gear' )
+        if self.package != self.keys['module']:
+                gear_rules = "tar: . name=" + self.keys['module'] + "-@version@ base=" + self.keys['module'] + "-@version@"
+        else:
+                gear_rules = "tar: ."
+        f = open( '.gear/rules', 'w' )
+        f.write( gear_rules )
+        f.close()
+        
+        # Save spec file
+        f = open( self.package + '.spec', 'w' )
+        f.write( self.spec )
+        f.close()
+            
 # ======================================================================================================
 spec = Spec()
-		
+                
 # Read command-line parameters
 parser = argparse.ArgumentParser(
     # version='1.0.0', 
@@ -109,8 +109,8 @@ parser = argparse.ArgumentParser(
     epilog=
 """
 Supported environment variables:
-GENSPEC_TEMPLATES	Path to spec templates (default /usr/share/spectemplates/)
-GENSPEC_PACKAGER	Packager name (default from `rpm --eval '%{packager}'`)
+GENSPEC_TEMPLATES       Path to spec templates (default /usr/share/spectemplates/)
+GENSPEC_PACKAGER        Packager name (default from `rpm --eval '%{packager}'`)
 """)
 
 parser.add_argument('-n', action='store', dest='module', help='Package or module name')
@@ -137,11 +137,11 @@ def get_available_types():
 
 
 def input_with_check(prompt):
-    res = raw_input(prompt)
+    res = input(prompt)
     # skip empty string and string containing only white spaces
     while (re.match('^\s*$', res)):
         print("Parameter should not be empty")
-        res = raw_input(prompt)
+        res = input(prompt)
     return res
 
 read_dict = {}
