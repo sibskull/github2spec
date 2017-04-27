@@ -9,23 +9,16 @@ from string import Template
 import os
 import sys
 import datetime
-import optparse
+import argparse
 import subprocess
 import re
 
 templates_path = "/usr/share/spectemplates/"
 
-# Add epilog show in OptionParser
-class MyParser(optparse.OptionParser):
-	def format_epilog(self, formatter):
-		return self.epilog
-
 # Get templates path and build list of available templates
 t = os.getenv('GENSPEC_TEMPLATES')
 if t != None:
 	templates_path = t
-
-
 
 # Get configured packager
 p = subprocess.Popen(['rpm', '--eval', '%{packager}'], stdout=subprocess.PIPE)
@@ -109,24 +102,28 @@ class Spec:
 spec = Spec()
 		
 # Read command-line parameters
-opt=MyParser(version='1.0.0', description='Script to generate RPM spec file based on template', epilog=
+parser = argparse.ArgumentParser(
+    # version='1.0.0', 
+    description='Script to generate RPM spec file based on template',
+    formatter_class=argparse.RawDescriptionHelpFormatter,
+    epilog=
 """
 Supported environment variables:
 GENSPEC_TEMPLATES	Path to spec templates (default /usr/share/spectemplates/)
 GENSPEC_PACKAGER	Packager name (default from `rpm --eval '%{packager}'`)
 """)
 
-opt.add_option('-n', action='store', dest='module', help='Package or module name')
-opt.add_option('-t', action='store', dest='spec_type', help='Package type')
-opt.add_option('-v', action='store', dest='version', help='Package version')
-opt.add_option('-s', action='store', dest='summary', help='Package summary')
-opt.add_option('-l', action='store', dest='license', help='Package license')
-opt.add_option('-u', action='store', dest='url', help='Package URL')
-opt.add_option('-d', action='store', dest='description', help='Package description')
-opt.add_option('-c', action='store', dest='lastchange', help='Package changes')
+parser.add_argument('-n', action='store', dest='module', help='Package or module name')
+parser.add_argument('-t', action='store', dest='spec_type', help='Package type')
+parser.add_argument('-v', action='store', dest='version', help='Package version')
+parser.add_argument('-s', action='store', dest='summary', help='Package summary')
+parser.add_argument('-l', action='store', dest='license', help='Package license')
+parser.add_argument('-u', action='store', dest='url', help='Package URL')
+parser.add_argument('-d', action='store', dest='description', help='Package description')
+parser.add_argument('-c', action='store', dest='lastchange', help='Package changes')
 
 # Fill values...
-(options,arguments) = opt.parse_args()
+args = parser.parse_args()
 
 def get_available_types():
     available_types = []
@@ -162,7 +159,7 @@ if len(sys.argv) < 2:
     
     spec.keys = read_dict
 else:
-    spec.keys = options.__dict__
+    spec.keys = args.__dict__
 
 # Prepare place
 spec.deploy()
