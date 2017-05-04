@@ -120,7 +120,7 @@ parser.add_argument('-s', action='store', dest='summary', help='Package summary'
 parser.add_argument('-l', action='store', dest='license', help='Package license')
 parser.add_argument('-u', action='store', dest='url', help='Package URL')
 parser.add_argument('-d', action='store', dest='description', help='Package description')
-parser.add_argument('-c', action='store', dest='lastchange', help='Package changes')
+parser.add_argument('-c', action='store', dest='lastchange', help='Package changelog')
 
 # Fill values...
 args = parser.parse_args()
