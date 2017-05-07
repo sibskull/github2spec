@@ -1,0 +1,92 @@
+#! /usr/bin/ruby
+
+# Script to get repository data from github and generate RPM spec file with
+# genspec. Program works in interactive mode, only one required value is URL.
+# Then you insert URL, the program will ask you to enter another values, but
+# before asking it would suggest default value. If you accept it then just
+# press Enter. It is recommended don't use default for summary, because it is
+# just a copy of description.
+# (c) 2017 Mikhail Gordeev <obirvalger@altlinux.org>
+
+# This program is free software; you can redistribute it and/or modify it
+# under the terms of MIT License.
+require 'octokit'
+
+client = Octokit::Client.new
+
+def input_with_check(prompt, optional = nil)
+  puts "Default value will be '#{optional}'" if optional
+  print "#{prompt}: "
+  res = STDIN.gets
+  # skip empty string and string containing only white spaces
+  while res =~ /^\s*$/ and not optional
+      puts "Parameter should not be empty"
+      print "#{prompt}: "
+      res = STDIN.gets
+  end
+  if res.chomp! == ""
+    optional
+  else
+    res
+  end
+end
+
+def get_available_types(templates_path)
+  available_types = []
+  begin
+    Dir.foreach(templates_path) do |fname|
+      available_types << fname.gsub(/.spec$/, '') if fname =~ /.spec$/
+    end
+
+  rescue Errno::ENOENT
+    puts "Directory #{templates_path} does not exist or does not contain any spec templates"
+  end
+
+  available_types.sort
+end
+
+available_types = get_available_types(ENV["GENSPEC_TEMPLATES"] ||
+                                      "/usr/share/spectemplates/")
+def available_types.to_str
+  " (#{self.join(',')})"
+end
+
+
+url = input_with_check('Package URL')
+repopath = url.gsub(/^.*github.com\//,'')
+repo = client.repo(repopath)
+description = repo[:description]
+version = client.tags(repopath)[0][:name].gsub(/^v/,'')
+
+#Hash with accept needs to avoid warning about unstable API
+license = client.repository_license_contents(repopath,
+                                             {accept: ""})[:license][:spdx_id]
+
+# Set default type to ruby if most used language is Ruby
+language = case repo[:language]
+           when "Ruby"
+             "ruby"
+           when "Python"
+             "python"
+           else
+             # False means no default value
+             #false
+             "common"
+           end
+
+spec_type = input_with_check('Package type' + available_types, language)
+until available_types.include? spec_type
+  puts "Choose one of listed variants or left blank line to use default"
+  spec_type = input_with_check('Package type' + available_types, language)
+end
+name = input_with_check('Package or module name', repo[:name])
+changelog = input_with_check('Package changelog',
+                             '- Initial build in Sisyphus')
+summary = input_with_check('Package summary',
+                          description)
+
+#puts name, spec_type, summary, url, description, version, changelog, license
+system "./genspec -t '#{spec_type}' -n '#{name}' -v '#{version}' \
+ -s '#{summary}' -u '#{url}' -c '#{changelog}' -d '#{description}'\
+ -l '#{license}'"
+
