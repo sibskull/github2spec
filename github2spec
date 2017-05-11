@@ -86,7 +86,7 @@ summary = input_with_check('Package summary',
                           description)
 
 #puts name, spec_type, summary, url, description, version, changelog, license
-system "./genspec -t '#{spec_type}' -n '#{name}' -v '#{version}' \
+system "genspec -t '#{spec_type}' -n '#{name}' -v '#{version}' \
  -s '#{summary}' -u '#{url}' -c '#{changelog}' -d '#{description}'\
  -l '#{license}'"
 
