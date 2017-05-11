@@ -112,7 +112,7 @@ GENSPEC_TEMPLATES       Path to spec templates (default /usr/share/spectemplates
 GENSPEC_PACKAGER        Packager name (default from `rpm --eval '%{packager}'`)
 """)
 
-parser.add_argument('--version', action='version', version="1.0.2")
+parser.add_argument('--version', action='version', version="1.1.0")
 parser.add_argument('-n', action='store', dest='module', help='Package or module name')
 parser.add_argument('-t', action='store', dest='spec_type', help='Package type')
 parser.add_argument('-v', action='store', dest='version', help='Package version')
