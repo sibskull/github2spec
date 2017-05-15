@@ -58,9 +58,14 @@ repo = client.repo(repopath)
 summary = repo[:description]
 version = client.tags(repopath)[0][:name].gsub(/^v/,'')
 
-#Hash with accept needs to avoid warning about unstable API
-license = client.repository_license_contents(repopath,
-                                             {accept: ""})[:license][:spdx_id]
+license =
+  begin
+    #Hash with accept needs to avoid warning about unstable API
+    client.repository_license_contents(repopath,
+                                       {accept: ""})[:license][:spdx_id]
+  rescue Octokit::NotFound
+    input_with_check("Package license (can't get license from repository)")
+  end
 
 # Set default type to ruby if most used language is Ruby
 language = case repo[:language]
