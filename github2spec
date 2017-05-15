@@ -55,7 +55,7 @@ end
 url = input_with_check('Package URL')
 repopath = url.gsub(/^.*github.com\//,'')
 repo = client.repo(repopath)
-description = repo[:description]
+summary = repo[:description]
 version = client.tags(repopath)[0][:name].gsub(/^v/,'')
 
 #Hash with accept needs to avoid warning about unstable API
@@ -82,8 +82,7 @@ end
 name = input_with_check('Package or module name', repo[:name])
 changelog = input_with_check('Package changelog',
                              '- Initial build in Sisyphus')
-summary = input_with_check('Package summary',
-                          description)
+description = input_with_check('Package description', summary)
 
 #puts name, spec_type, summary, url, description, version, changelog, license
 system "genspec -t '#{spec_type}' -n '#{name}' -v '#{version}' \
