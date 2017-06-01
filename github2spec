@@ -87,8 +87,15 @@ version = client.tags(repopath)[0][:name].gsub(/^v/,'')
 license =
   begin
     # Hash with accept needs to avoid warning about unstable API
-    client.repository_license_contents(repopath,
-                                       {accept: ""})[:license][:spdx_id]
+    l = client.repository_license_contents(repopath,
+                                           {accept: ""})[:license][:spdx_id]
+
+    # Use this ugly construction because of github license api
+    if l
+      l
+    else
+      raise Octokit::NotFound
+    end
   rescue Octokit::NotFound
     unless interactive_level == 0
       input_with_check("Package license (can't get license from repository)")
@@ -113,6 +120,7 @@ language = case repo[:language]
 if interactive_level > 0
   if interactive_level > 1
     version = input_with_check('Package version', version)
+    license = input_with_check('Package license', license)
     summary = input_with_check('Package summary', summary)
   end
 
