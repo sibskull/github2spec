@@ -1,16 +1,41 @@
 #! /usr/bin/ruby
 
-# Script to get repository data from github and generate RPM spec file with
-# genspec. Program works in interactive mode, only one required value is URL.
-# Then you insert URL, the program will ask you to enter another values, but
-# before asking it would suggest default value. If you accept it then just
-# press Enter. It is recommended don't use default for summary, because it is
-# just a copy of description.
-# (c) 2017 Mikhail Gordeev <obirvalger@altlinux.org>
+#/ Script to get repository data from github and generate RPM spec file with
+#/ genspec. Program works in interactive mode, only one required value is URL.
+#/ Then you insert URL, the program will ask you to enter another values, but
+#/ before asking it would suggest default value. If you accept it then just
+#/ press Enter. It is recommended don't use default for desription, because it
+#/ is just a copy of description.
+#/
+#/ Available options:
+#/   -i, --interactive=level set interactive level:
+#/                           0 -- no interaction (only ask url)
+#/                           1 -- default value
+#/                           2 -- full interaction (ask all values)
+#/   -u, --url               provide url and set interactive to 0
 
+# (c) 2017 Mikhail Gordeev <obirvalger@altlinux.org>
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of MIT License.
 require 'octokit'
+require 'optparse'
+
+interactive_level = 1
+url = nil
+
+ARGV.options do |opts|
+  opts.on("-i", "--interactive=val", Integer) do |level|
+    interactive_level = level unless url
+  end
+
+  opts.on("-u", "--url=val", String) do |val|
+    url = val
+    interactive_level = 0
+  end
+
+  opts.on_tail("-h", "--help") { exec "grep ^#/<'#{__FILE__}' | cut -c4-" }
+  opts.parse!
+end
 
 client = Octokit::Client.new
 
@@ -51,20 +76,26 @@ def available_types.to_str
   " (#{self.join(',')})"
 end
 
+url ||= input_with_check('Package URL')
 
-url = input_with_check('Package URL')
-repopath = url.gsub(/^.*github.com\//,'')
+# Repositry format: user/repo
+repopath = url.gsub(/^.*github.com\//,'').chomp("/")
 repo = client.repo(repopath)
 summary = repo[:description]
 version = client.tags(repopath)[0][:name].gsub(/^v/,'')
 
 license =
   begin
-    #Hash with accept needs to avoid warning about unstable API
+    # Hash with accept needs to avoid warning about unstable API
     client.repository_license_contents(repopath,
                                        {accept: ""})[:license][:spdx_id]
   rescue Octokit::NotFound
-    input_with_check("Package license (can't get license from repository)")
+    unless interactive_level == 0
+      input_with_check("Package license (can't get license from repository)")
+    else
+      warn "None License"
+      "None"
+    end
   end
 
 # Set default type to ruby if most used language is Ruby
@@ -79,15 +110,31 @@ language = case repo[:language]
              "common"
            end
 
-spec_type = input_with_check('Package type' + available_types, language)
-until available_types.include? spec_type
-  puts "Choose one of listed variants or left blank line to use default"
+if interactive_level > 0
+  if interactive_level > 1
+    version = input_with_check('Package version', version)
+    summary = input_with_check('Package summary', summary)
+  end
+
   spec_type = input_with_check('Package type' + available_types, language)
+  until available_types.include? spec_type
+    puts "Choose one of listed variants or left blank line to use default"
+    spec_type = input_with_check('Package type' + available_types, language)
+  end
+
+  name = input_with_check('Package or module name', repo[:name])
+  changelog = input_with_check('Package changelog',
+                               '- Initial build for Sisyphus')
+  description = input_with_check('Package description', summary)
+  if description == summary # Not copy summary, but use macros
+    description = "%summary"
+  end
+else # no interaction
+  spec_type = language
+  name = repo[:name]
+  changelog = '- Initial build for Sisyphus'
+  description = "%summary"
 end
-name = input_with_check('Package or module name', repo[:name])
-changelog = input_with_check('Package changelog',
-                             '- Initial build in Sisyphus')
-description = input_with_check('Package description', summary)
 
 #puts name, spec_type, summary, url, description, version, changelog, license
 system "genspec -t '#{spec_type}' -n '#{name}' -v '#{version}' \
