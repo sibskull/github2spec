@@ -12,7 +12,7 @@
 #/                           0 -- no interaction (only ask url)
 #/                           1 -- default value
 #/                           2 -- full interaction (ask all values)
-#/   -u, --url               provide url and set interactive to 0
+#/   -u, --url=url           provide url and set interactive to 0
 #/   -v, --version           show version
 
 # (c) 2017 Mikhail Gordeev <obirvalger@altlinux.org>
