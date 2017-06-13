@@ -13,6 +13,7 @@
 #/                           1 -- default value
 #/                           2 -- full interaction (ask all values)
 #/   -u, --url               provide url and set interactive to 0
+#/   -v, --version           show version
 
 # (c) 2017 Mikhail Gordeev <obirvalger@altlinux.org>
 # This program is free software; you can redistribute it and/or modify it
@@ -32,6 +33,8 @@ ARGV.options do |opts|
     url = val
     interactive_level = 0
   end
+
+  opts.on("-v", "--version") { puts "1.3.1"; exit }
 
   opts.on_tail("-h", "--help") { exec "grep ^#/<'#{__FILE__}' | cut -c4-" }
   opts.parse!
