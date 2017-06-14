@@ -85,6 +85,15 @@ url ||= input_with_check('Package URL')
 repopath = url.gsub(/^.*github.com\//,'').chomp("/")
 repo = client.repo(repopath)
 summary = repo[:description]
+unless summary
+  if interactive_level == 0
+    warn "No description provided by repo"
+    exit 1
+  elsif interactive_level == 1
+    summary =
+      input_with_check("Package summary (can't get summary from repository)")
+  end
+end
 version = client.tags(repopath)[0][:name].gsub(/^v/,'')
 
 license =
