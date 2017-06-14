@@ -100,7 +100,9 @@ license =
       raise Octokit::NotFound
     end
   rescue Octokit::NotFound
-    unless interactive_level == 0
+    # Ask only in 1 interactive level because of 0 level is no interaction, and
+    # if level is more than 1 it will ask later
+    if interactive_level == 1
       input_with_check("Package license (can't get license from repository)")
     else
       warn "None License"
