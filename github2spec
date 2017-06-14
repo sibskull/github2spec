@@ -94,7 +94,19 @@ unless summary
       input_with_check("Package summary (can't get summary from repository)")
   end
 end
-version = client.tags(repopath)[0][:name].gsub(/^v/,'')
+
+tags = client.tags(repopath)
+version =
+  if tags.empty?
+    if interactive_level == 0
+      warn "No tags provided by repo"
+      exit 1
+    elsif interactive_level == 1
+      input_with_check("Package version (can't get tags from repository)")
+    else
+      tags[0][:name].gsub(/^v/,'')
+    end
+  end
 
 license =
   begin
