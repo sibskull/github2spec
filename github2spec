@@ -96,17 +96,17 @@ unless summary
 end
 
 tags = client.tags(repopath)
-version =
-  if tags.empty?
-    if interactive_level == 0
-      warn "No tags provided by repo"
-      exit 1
-    elsif interactive_level == 1
-      input_with_check("Package version (can't get tags from repository)")
-    else
-      tags[0][:name].gsub(/^v/,'')
-    end
+if tags.empty?
+  if interactive_level == 0
+    warn "No tags provided by repo"
+    exit 1
+  elsif interactive_level == 1
+    version = input_with_check("Package version (can't get tags from repository)")
   end
+else
+  tag = tags[0][:name]
+  version = tag.gsub(/^v/,'')
+end
 
 license =
   begin
@@ -173,5 +173,5 @@ end
 # Use system with multiple agrs to avoid shell execution
 system(*%W(genspec -t #{spec_type} -n #{name} -v #{version}
  -s #{summary} -u #{url} -c #{changelog}
- -d #{description} -l #{license}))
+ -d #{description} -l #{license} --tag #{tag}))
 
