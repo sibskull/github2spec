@@ -171,7 +171,7 @@ else # no interaction
 end
 
 # Use system with multiple agrs to avoid shell execution
-system(*%W(genspec -t #{spec_type} -n #{name} -v #{version}
+system(*%W[genspec -t #{spec_type} -n #{name} -v #{version}
  -s #{summary} -u #{url} -c #{changelog}
- -d #{description} -l #{license} --tag #{tag}))
+ -d #{description} -l #{license} --tag #{tag}])
 
