@@ -34,7 +34,7 @@ ARGV.options do |opts|
     interactive_level = 0
   end
 
-  opts.on("-v", "--version") { puts "1.3.6"; exit }
+  opts.on("-v", "--version") { puts "1.3.8"; exit }
 
   opts.on_tail("-h", "--help") { exec "grep ^#/<'#{__FILE__}' | cut -c4-" }
   opts.parse!
