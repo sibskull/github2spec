@@ -136,7 +136,7 @@ language = case repo[:language]
            when "Ruby"
              "ruby"
            when "Python"
-             "python"
+             "python3"
            else
              # False means no default value
              #false
