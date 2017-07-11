@@ -7,6 +7,8 @@
 #/ press Enter. It is recommended don't use default for desription, because it
 #/ is just a copy of description.
 #/
+#/ Usage: github2spec [options] [-- <genspec-options>]
+#/
 #/ Available options:
 #/   -i, --interactive=level set interactive level:
 #/                           0 -- no interaction (only ask url)
@@ -180,6 +182,9 @@ end
 exec_options = %W[genspec -t #{spec_type} -n #{name} -v #{version}
 -s #{summary} -u #{url} -c #{changelog} -d #{description}
 -l #{license} --tag #{tag} --git]
+
+# Pass all remaining options (after --) to genspec
+exec_options += ARGV
 
 if options[:print_only]
   puts exec_options.shelljoin
