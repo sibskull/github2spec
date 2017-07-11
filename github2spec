@@ -4,8 +4,7 @@
 #/ genspec. Program works in interactive mode, only one required value is URL.
 #/ Then you insert URL, the program will ask you to enter another values, but
 #/ before asking it would suggest default value. If you accept it then just
-#/ press Enter. It is recommended don't use default for desription, because it
-#/ is just a copy of description.
+#/ press Enter.
 #/
 #/ Usage: github2spec [options] [-- <genspec-options>]
 #/
