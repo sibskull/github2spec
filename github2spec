@@ -16,6 +16,7 @@
 #/   -u, --url=url           provide url and set interactive to 0
 #/   -v, --version           show version
 #/   -p, --print-only        only prints genspec execution string
+#/   -h, --help              show help
 
 # (c) 2017 Mikhail Gordeev <obirvalger@altlinux.org>
 # This program is free software; you can redistribute it and/or modify it
