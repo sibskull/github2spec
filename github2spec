@@ -16,6 +16,7 @@
 #/   -u, --url=url           provide url and set interactive to 0
 #/   -v, --version           show version
 #/   -p, --print-only        only prints genspec execution string
+#    -e, --executable        use for executable packages instead of libs
 #/   -h, --help              show help
 
 # (c) 2017 Mikhail Gordeev <obirvalger@altlinux.org>
@@ -44,6 +45,7 @@ ARGV.options do |opts|
 
   opts.on("-v", "--version") { puts "1.3.10"; exit }
   opts.on("-p", "--print-only") { options[:print_only] = true }
+  opts.on("-e", "--executable") { options[:executable] = true }
 
   opts.on_tail("-h", "--help") { exec "grep ^#/<'#{__FILE__}' | cut -c4-" }
   opts.parse!
@@ -177,6 +179,11 @@ else # no interaction
   name = repo[:name]
   changelog = '- Initial build for Sisyphus'
   description = "%summary"
+end
+
+if options[:executable]
+  exec_spec_type = available_types.find { |t| t == spec_type + "-bin" }
+  spec_type = exec_spec_type if exec_spec_type
 end
 
 exec_options = %W[genspec -t #{spec_type} -n #{name} -v #{version}
