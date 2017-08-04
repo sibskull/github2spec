@@ -34,7 +34,7 @@ options = {
 
 ARGV.options do |opts|
   opts.on("-i", "--interactive=val", Integer) do |level|
-    options[:interactive_level] = level unless url
+    options[:interactive_level] = level unless options[:url]
   end
 
   opts.on("-u", "--url=val", String) do |val|
