@@ -2,9 +2,9 @@
 
 #/ Script to get repository data from github and generate RPM spec file with
 #/ genspec. Program works in interactive mode, only one required value is URL.
-#/ Then you insert URL, the program will ask you to enter another values, but
-#/ before asking it would suggest default value. If you accept it then just
-#/ press Enter.
+#/ Then you insert URL, the program will ask you to enter another values, and
+#/ prints default value in square brakets, for example [name]. If you accept
+#/ it then just press Enter.
 #/
 #/ Usage: github2spec [options] [-- <genspec-options>]
 #/
@@ -54,8 +54,11 @@ end
 client = Octokit::Client.new
 
 def input_with_check(prompt, optional = nil)
-  puts "Default value will be '#{optional}'" if optional
-  print "#{prompt}: "
+  if optional
+    print "#{prompt} [#{optional}]: "
+  else
+    print "#{prompt}: "
+  end
   res = STDIN.gets
   # skip empty string and string containing only white spaces
   while res =~ /^\s*$/ and not optional
