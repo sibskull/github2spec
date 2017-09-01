@@ -99,7 +99,12 @@ url = options[:url] || input_with_check('Package URL')
 
 # Repositry format: user/repo
 repopath = url.gsub(/^.*github.com\//,'').chomp("/")
-repo = client.repo(repopath)
+begin
+  repo = client.repo(repopath)
+rescue Octokit::NotFound
+  puts "Not a valid github repository: '#{options[:url]}'."
+  exit 1
+end
 summary = repo[:description]
 unless summary
   if options[:interactive_level] == 0
