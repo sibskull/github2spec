@@ -28,19 +28,19 @@ require 'shellwords'
 
 # default value for command line options
 options = {
-  interactive_level: 1,
+  interactive_level: -1, # To distinguish default value from set in command line
   url: nil,
   print_only: false,
 }
 
 ARGV.options do |opts|
   opts.on("-i", "--interactive=val", Integer) do |level|
-    options[:interactive_level] = level unless options[:url]
+    options[:interactive_level] = level
   end
 
   opts.on("-u", "--url=val", String) do |val|
     options[:url] = val
-    options[:interactive_level] = 0
+    options[:interactive_level] = 0 if options[:interactive_level] == -1
   end
 
   opts.on("-v", "--version") { puts "1.3.10"; exit }
@@ -50,6 +50,8 @@ ARGV.options do |opts|
   opts.on_tail("-h", "--help") { exec "grep ^#/<'#{__FILE__}' | cut -c4-" }
   opts.parse!
 end
+
+options[:interactive_level] = 1 if options[:interactive_level] < 0
 
 client = Octokit::Client.new
 
