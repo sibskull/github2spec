@@ -22,11 +22,105 @@
 # (c) 2017 Mikhail Gordeev <obirvalger@altlinux.org>
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of MIT License.
-require 'octokit'
+
+require 'open-uri'
+require 'json'
 require 'optparse'
 require 'shellwords'
+require 'pp'
 
-# default value for command line options
+GITHUB_API_URL = 'https://api.github.com/repos/'
+
+NEEDED_PARAMETRS = [
+  "name",
+  "summary",
+  "license",
+  "description",
+  "type",
+  "url",
+  "version",
+  "changelog",
+]
+
+class Hash
+  def needed
+    self.select { |key, value| NEEDED_PARAMETRS.include? key }
+  end
+
+  def needed!
+    self.select! { |key, value| NEEDED_PARAMETRS.include? key }
+  end
+
+  def to_args
+    self.reduce("") do |acc, (key, value)|
+      "#{acc} -#{key[0]} #{value}"
+    end
+  end
+end
+
+# TODO specify github api version v3
+def github_parameters(repo)
+  result = {}
+  begin
+    jr = JSON.load(open(GITHUB_API_URL + repo))
+    # list of parameters goes as is
+    ["name"].each do |v|
+      result[v] = jr[v]
+    end
+
+    result['type'] = case jr['language']
+    when "Ruby"
+      "ruby"
+    when "Python"
+      "python3"
+    when "Go"
+      "golang"
+    else
+      "common"
+    end
+
+    # Githubs "description" is "summary" in rpms mean
+    result["summary"] = jr["description"]
+    jl = begin
+      JSON.load(open (GITHUB_API_URL + repo + '/license'))
+    rescue OpenURI::HTTPError
+      nil
+    end
+    result["license"] = jl["license"]["spdx_id"] if jl
+    jt = JSON.load(open (GITHUB_API_URL + repo + '/tags'))
+    tags = jt.map { |x| x["name"] }
+    tags = nil if tags == []
+    result["tag"] = tags[0] if tags
+    result["version"] = result["tag"].gsub(/^v/,'') if result["tag"]
+    return result
+  rescue SocketError
+    abort "No internet connection"
+  rescue OpenURI::HTTPError
+    abort "Not a valid github repository"
+  end
+end
+
+# Function simulating github_parameters for testing
+def github_test_parameters(repo)
+  {
+    "name" => "pry",
+    # "type" => "ruby",
+    "summary"=>"An IRB alternative and runtime developer console",
+    "license" => "MIT",
+    "tag"=>"v0.10.4",
+    "version" => "0.10.4",
+  }
+end
+
+default_parameters = {
+  "description" => "%summary",
+  "changelog" => "Initial build for Sisyphus",
+}
+
+# Values specified with command line options
+cmd_parameters = {}
+
+# Default value for command line options controling this program
 options = {
   interactive_level: -1, # To distinguish default value from set in command line
   url: nil,
@@ -34,42 +128,57 @@ options = {
 }
 
 ARGV.options do |opts|
-  opts.on("-i", "--interactive=val", Integer) do |level|
+  # Options to control program execution
+  opts.on("-i", "--interactive=level", Integer) do |level|
+    abort "Interactive level should be in [0,1,2], get #{level}!" if level<0 or level>2
     options[:interactive_level] = level
   end
-
   opts.on("-u", "--url=val", String) do |val|
     options[:url] = val
     options[:interactive_level] = 0 if options[:interactive_level] == -1
+    cmd_parameters["url"] ||= val
   end
-
   opts.on("-v", "--version") { puts "1.3.10"; exit }
   opts.on("-p", "--print-only") { options[:print_only] = true }
   opts.on("-e", "--executable") { options[:executable] = true }
+  opts.on_tail("-h", "--help") do
+    system "grep ^#/<'#{__FILE__}' | cut -c4-"
+    puts "\nParameters passed to genspec:"
+    NEEDED_PARAMETRS.each do |parameter|
+      uc_parameter = parameter.upcase
+      puts "  -#{uc_parameter[0]}, --#{uc_parameter}=#{parameter}"
+    end
+    exit 0
+  end
 
-  opts.on_tail("-h", "--help") { exec "grep ^#/<'#{__FILE__}' | cut -c4-" }
+  # Parameters get with command line options
+  NEEDED_PARAMETRS.each do |parameter|
+    # Use upper case values to distinguish with control options
+    uc_parameter = parameter.upcase
+    opts.on("-#{uc_parameter[0]}", "--#{uc_parameter}=val", String) do |val|
+      cmd_parameters[parameter] = val
+    end
+  end
+
   opts.parse!
+  options[:interactive_level] = 1 if options[:interactive_level] < 0
 end
 
-options[:interactive_level] = 1 if options[:interactive_level] < 0
-
-client = Octokit::Client.new
-
-def input_with_check(prompt, optional = nil)
-  if optional
-    print "#{prompt} [#{optional}]: "
+def input_with_check(prompt, default = nil)
+  if default
+    print "#{prompt} [#{default}]: "
   else
     print "#{prompt}: "
   end
   res = STDIN.gets
   # skip empty string and string containing only white spaces
-  while res =~ /^\s*$/ and not optional
+  while res =~ /^\s*$/ and default.nil?
       puts "Parameter should not be empty"
       print "#{prompt}: "
       res = STDIN.gets
   end
   if res.chomp! == ""
-    optional
+    default
   else
     res
   end
@@ -95,117 +204,41 @@ def available_types.to_str
   " (#{self.join(',')})"
 end
 
-url = options[:url] || input_with_check('Package URL')
+url = options[:url] || input_with_check('URL')
+repo = url.gsub(/^.*github.com\//,'').chomp("/")
 
-# Repositry format: user/repo
-repopath = url.gsub(/^.*github.com\//,'').chomp("/")
-begin
-  repo = client.repo(repopath)
-rescue Octokit::NotFound
-  puts "Not a valid github repository: '#{options[:url]}'."
-  exit 1
-end
-summary = repo[:description]
-unless summary
-  if options[:interactive_level] == 0
-    warn "No description provided by repo"
-    exit 1
-  elsif options[:interactive_level] == 1
-    summary =
-      input_with_check("Package summary (can't get summary from repository)")
+# Priority of parameter sources in ascending order: default, github, cmd
+parameters = default_parameters.merge(github_parameters(repo)).merge(cmd_parameters)
+# parameters = default_parameters.merge(github_test_parameters(repo)).merge(cmd_parameters)
+
+NEEDED_PARAMETRS.each do |parameter|
+  default = parameters[parameter]
+  # TODO available types
+  prompt = "Package #{parameter}"
+  if parameter == "type"
+    prompt += available_types
   end
-end
-
-tags = client.tags(repopath)
-if tags.empty?
-  if options[:interactive_level] == 0
-    warn "No tags provided by repo"
-    exit 1
-  elsif options[:interactive_level] == 1
-    version = input_with_check("Package version (can't get tags from repository)")
+  ilevel = options[:interactive_level]
+  if ilevel == 2 or (ilevel == 1 and default.nil?)
+    parameters[parameter] = input_with_check(prompt, default)
+  elsif ilevel == 0 and default.nil?
+    abort("Can't get value for <#{parameter}>.")
   end
-else
-  tag = tags[0][:name]
-  version = tag.gsub(/^v/,'')
-end
-
-license =
-  begin
-    # Hash with accept needs to avoid warning about unstable API
-    l = client.repository_license_contents(repopath,
-                                           {accept: ""})[:license][:spdx_id]
-
-    # Use this ugly construction because of github license api
-    if l
-      l
-    else
-      raise Octokit::NotFound
-    end
-  rescue Octokit::NotFound
-    # Ask only in 1 interactive level because of 0 level is no interaction, and
-    # if level is more than 1 it will ask later
-    if options[:interactive_level] == 1
-      input_with_check("Package license (can't get license from repository)")
-    elsif options[:interactive_level] == 0
-      warn "No license provided by repo"
-      exit 1
-    end
-  end
-
-# Set default type to ruby if most used language is Ruby
-language = case repo[:language]
-           when "Ruby"
-             "ruby"
-           when "Python"
-             "python3"
-           else
-             # False means no default value
-             #false
-             "common"
-           end
-
-if options[:interactive_level] > 0
-  if options[:interactive_level] > 1
-    version = input_with_check('Package version', version)
-    license = input_with_check('Package license', license)
-    summary = input_with_check('Package summary', summary)
-  end
-
-  spec_type = input_with_check('Package type' + available_types, language)
-  until available_types.include? spec_type
-    puts "Choose one of listed variants or left blank line to use default"
-    spec_type = input_with_check('Package type' + available_types, language)
-  end
-
-  name = input_with_check('Package or module name', repo[:name])
-  changelog = input_with_check('Package changelog',
-                               '- Initial build for Sisyphus')
-  description = input_with_check('Package description', summary)
-  if description == summary # Not copy summary, but use macros
-    description = "%summary"
-  end
-else # no interaction
-  spec_type = language
-  name = repo[:name]
-  changelog = '- Initial build for Sisyphus'
-  description = "%summary"
 end
 
 if options[:executable]
-  exec_spec_type = available_types.find { |t| t == spec_type + "-bin" }
-  spec_type = exec_spec_type if exec_spec_type
+  exec_spec_type = available_types.find { |t| t == parameters["type"] + "-bin" }
+  parameters["type"] = exec_spec_type if exec_spec_type
 end
 
-exec_options = %W[genspec -t #{spec_type} -n #{name} -v #{version}
--s #{summary} -u #{url} -c #{changelog} -d #{description}
--l #{license} --tag #{tag} --git]
-
-# Pass all remaining options (after --) to genspec
-exec_options += ARGV
+exec_options = %W[genspec --git --tag #{parameters["tag"]}]
+parameters.needed.each do |key, value|
+  exec_options.push("-#{key[0]}", value)
+end
 
 if options[:print_only]
   puts exec_options.shelljoin
 else
-  # Use system with multiple agrs to avoid shell execution
-  system(*exec_options)
+  # NOTE do not forget to check return code (true is 0)
+  exec(*exec_options)
 end
